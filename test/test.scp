@@ -1,0 +1,321 @@
+# 检查词法分析器解析
+print("测试开始\n");
+print("hoge\tpiyo\n\\n");
+print("abc\n");
+
+
+# 检查运算
+print("8.0 + 3.0 = " + (8.0 + 3.0) + "\n");
+print("8.0 - 3.0 = " + (8.0 - 3.0) + "\n");
+print("8.0 + -3.0 = " + (8.0 + -3.0) + "\n");
+print("8.0 * 3.0 = " + (8.0 * 3.0) + "\n");
+print("8.0 / 3.0 = " + (8.0 / 3.0) + "\n");
+print("10.0 % 8.0 = " + (10.0 % 8.0) + "\n");
+print("8 + 3.0 = " + (8 + 3.0) + "\n");
+print("8 - 3.0 = " + (8 - 3.0) + "\n");
+print("8 + -3.0 = " + (8 + -3.0) + "\n");
+print("8 * 3.0 = " + (8 * 3.0) + "\n");
+print("8 / 0 = " + (8 / 3.0) + "\n");
+print("10 % 8.0 = " + (10 % 8.0) + "\n");
+print("8.0 + 3 = " + (8.0 + 3) + "\n");
+print("8.0 - 3 = " + (8.0 - 3) + "\n");
+print("8.0 + -3 = " + (8.0 + -3) + "\n");
+print("8.0 * 3 = " + (8.0 * 3) + "\n");
+print("8.0 / 3 = " + (8.0 / 3) + "\n");
+print("10.0 % 8 = " + (10.0 % 8) + "\n");
+
+a  =  8;
+print("8 + 3 = " + (a + 3) + "\n");
+print("8 - 3 = " + (a - 3) + "\n");
+print("8 + -3 = " + (a + -3) + "\n");
+print("8 * 3 = " + (a * 3) + "\n");
+print("8 / 3 = " + (a / 3) + "\n");
+a  =  10;
+print("10 % 8 = " + (a % 8) + "\n");
+a  =  8.0;
+print("8.0 + 3.0 = " + (a + 3.0) + "\n");
+print("8.0 - 3.0 = " + (a - 3.0) + "\n");
+print("8.0 + -3.0 = " + (a + -3.0) + "\n");
+print("8.0 * 3.0 = " + (a * 3.0) + "\n");
+print("8.0 / 3.0 = " + (a / 3.0) + "\n");
+a  =  10;
+print("10.0 % 8.0 = " + (a % 8.0) + "\n");
+a  =  8;
+print("8 + 3.0 = " + (a + 3.0) + "\n");
+print("8 - 3.0 = " + (a - 3.0) + "\n");
+print("8 + -3.0 = " + (a + -3.0) + "\n");
+print("8 * 3.0 = " + (a * 3.0) + "\n");
+print("8 / 3.0 = " + (a / 3.0) + "\n");
+a  =  10;
+print("10 % 8.0 = " + (a % 8.0) + "\n");
+a  =  8.0;
+print("8.0 + 3 = " + (a + 3) + "\n");
+print("8.0 - 3 = " + (a - 3) + "\n");
+print("8.0 + -3 = " + (a + -3) + "\n");
+print("8.0 * 3 = " + (a * 3) + "\n");
+print("8.0 / 3 = " + (a / 3) + "\n");
+a  =  10.0;
+print("10.0 % 8 = " + (a % 8) + "\n");
+print("1 < 8 = " + (1 < 8) + "\n");
+print("1 <=  8 = " + (1 <=  8) + "\n");
+print("1  ==  8 = " + (1  ==  8) + "\n");
+print("1 !=  8 = " + (1 !=  8) + "\n");
+print("1 >=  8 = " + (1 >=  8) + "\n");
+print("1 >8 = " + (1 > 8) + "\n");
+
+# 检查流控制
+if (true) {
+    print("true\n");
+}
+if (false) {
+    print("false\n");
+}
+if (false) {
+    print("bad\n");
+}else {
+    print("good\n");
+}
+
+i  =  0;
+for (;;) {
+    print(" i = " + i);
+    if (i > 3) {
+	break;
+    }
+    i  =  i + 1;
+}
+print("\n");
+
+for (i  =  0; i < 3; i  =  i + 1) {
+    print("*** i = " + i + "***\n");
+    if (i  ==  0) {
+	print("i  ==  0\n");
+    } elif (i  ==  1) {
+	print("i  ==  1\n");
+    } elif (i  ==  2) {
+	print("i  ==  2\n");
+    } else {
+	print("i  ==  else\n");
+    }
+    if (i !=  8) {
+	print("i !=  8\n");
+    }
+    if (i  ==  2 || i  ==  8) {
+	print("i  ==  2 || i  ==  8\n");
+    }
+    for (j  =  0; j < 3; j  =  j + 1) {
+	if (i  ==  2 && j  ==  8) {
+	    print("i  ==  2 && j  ==  " + j + "\n");
+	}
+    }
+}
+
+for (i = 0; i <=  3; i  =  i + 1) {
+    print(" i = " + i);
+}
+print("\n");
+
+for (i  =  3; i >=  0; i  =  i - 1) {
+    print(" i = " + i);
+}
+print("\n");
+
+i  =  3;
+while (i > 0) {
+    print(" i = " + i);
+    i  =  i - 1;
+}
+print("\n");
+
+while (i < 10) {
+    print(" i = " + i);
+    if (i  ==  3) {
+	break;
+    }
+    i  =  i + 1;
+}
+print("\n");
+
+i  =  0;
+while (i < 10) {
+    i  =  i + 1;
+    if (i < 3) {
+	continue;
+    }
+    print(" i = " + i);
+}
+print("\n");
+
+j = 0;
+for (i  =  0; i < 5; i  =  i + 1) {
+    for(j = 0; j<5; j = j+1){
+        print(" i = " + i + " j = " + j + "\n");
+    }
+    if (i  ==  3) {
+    break;
+    }
+
+}
+print("\n");
+
+for (i  =  0; i < 10; i  =  i + 1) {
+    if (i < 3) {
+        continue;
+    }
+    print(" i = " + i);
+}
+print("\n");
+
+# 检查布尔运算
+a  =  true;
+print("a = " + a + "\n");
+if (a) {
+    print("true\n");
+} else {
+    print("false\n");
+}
+if (a || false) {
+    print("a || false\n");
+}
+if (a && false) {
+    print("a && false\n");
+}
+
+if (true  ==  true) {
+    print("true  ==  true good\n");
+}
+if (true  ==  false) {
+    print("true  ==  false bad\n");
+}
+if (true !=  true) {
+    print("true ! =  true bad\n");
+}
+if (true !=  false) {
+    print("true ! =  false good\n");
+}
+
+# 检查字符串转换
+print(8);
+print("\n");
+z  =  print(8.0);
+print("\n");
+print("z = " + z + "\n");
+a  =  3;
+print("a = " + a + "\n");
+a  =  3.0;
+print("a = " + a + "\n");
+a  =  "piyopiyo";
+print("a = " + a + "\n");
+
+# 检查字符串比较
+str  =  "abc";
+if (str  ==  "abc") {
+    print(" ==  good.\n");
+}
+if (str !=  "abc") {
+    print("!=  bad.\n");
+}
+if (str < "abd") {
+    print("< good.\n");
+}
+if (str < "abb") {
+    print("< bad.\n");
+}
+if (str <=  "abc") {
+    print("<=  good.\n");
+}
+if (str <=  "abd") {
+    print("<=  good.\n");
+}
+
+if (str <=  "abb") {
+    print("<=  bad.\n");
+}
+
+if (str >=  ">=  abc") {
+    print(">=  good.\n");
+}
+if (str >=  ">=  abb") {
+    print(">=  good.\n");
+}
+if (str >=  "abd") {
+    print(">=  bad.\n");
+}
+
+# 检查函数
+hoge(1, 8);
+b  =  hoge(2, 3);
+print("b = " + b + "\n");
+
+print("int_func() = " + int_func() + "\n");
+print("real_func() = " + real_func() + "\n");
+print("string_func() = " + string_func() + "\n");
+print("void_func() = " + void_func() + "\n");
+
+function hoge(a, b) {
+    c  =  a + b;
+    print("a+b = " + (a + b) + "\n");
+    return c;
+}
+
+function int_func() {
+    print("int func in\n");
+    for (i  =  0; i < 10; i  =  i + 1) {
+	print("i = " + i + "\n");
+	return 1;
+    }
+    print("int func out\n");
+}
+
+function real_func() {
+    print("real func in\n");
+    for (i  =  0; i < 10; i  =  i + 1) {
+	print("i = " + i + "\n");
+	return 0.1;
+    }
+    print("real func out\n");
+}
+function string_func() {
+    zzz  =  "zzz";
+    for (i  =  0; i < 10; i  =  i + 1) {
+	print("i = " + i + "\n");
+	return "abc";
+    }
+}
+
+function void_func() {
+    qq  =  ww  =  ee  =  "abc";
+    print("qq = " + qq + "\n");
+    return;
+}
+
+function func(a) {
+    return a;
+}
+a  =  func("abc");
+print("a = " + a + "\n");
+
+# 检查全局变量访问与global声明
+gtest  =  10;
+function gtestfunc() {
+    global gtest;
+    gtest  =  20;
+}
+function gtestfunc2() {
+    gtest  =  80;
+    print("gtest = " + gtest + "\n");
+}
+gtestfunc();
+gtestfunc2();
+print("gtest = " + gtest + "\n");
+
+# 检查文件读写，以下代码的功能为将test.scp的内容复制到ftest.result中
+fp  =  fopen("test/test.scp", "r");
+print("open file\n");
+fp2  =  fopen("test/ftest.result", "w");
+while ((str  =  fread(fp)) !=  null) {
+    fwrite(str, fp2);
+}
+print("successfully write!\n");
+fclose(fp);
+fclose(fp2);
