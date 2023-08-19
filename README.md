@@ -1,38 +1,40 @@
 # SCP/sicpy
 
+English | [简体中文](README.zh-cn.md)
+
 - [SCP/sicpy](#scpsicpy)
-  - [语言功能描述及创新性](#语言功能描述及创新性)
-  - [开发细节](#开发细节)
-    - [代码量统计](#代码量统计)
-    - [词法分析](#词法分析)
-    - [语法分析](#语法分析)
-    - [语义分析](#语义分析)
-    - [核心数据类型](#核心数据类型)
-    - [计算模块](#计算模块)
-    - [debug模块](#debug模块)
-    - [memory模块](#memory模块)
-    - [sicpy原生函数与C语言函数预留接口](#sicpy原生函数与c语言函数预留接口)
-  - [使用手册](#使用手册)
-    - [编译及运行](#编译及运行)
-    - [语言描述](#语言描述)
-    - [输入输出样例](#输入输出样例)
-  - [参考资料](#参考资料)
+  - [Introduction](#introduction)
+  - [Development Details](#development-details)
+    - [Code Count](#code-count)
+    - [Lexical Analysis](#lexical-analysis)
+    - [Syntax Analysis](#syntax-analysis)
+    - [Semantic Analysis](#semantic-analysis)
+    - [Core Data Types](#core-data-types)
+    - [Computation Module](#computation-module)
+    - [Debug Module](#debug-module)
+    - [Memory Module](#memory-module)
+    - [Sicpy Native Functions and C Language Function Interface](#sicpy-native-functions-and-c-language-function-interface)
+  - [User Manual](#user-manual)
+    - [Compilation and Execution](#compilation-and-execution)
+    - [Language Description](#language-description)
+    - [Input and Output Examples](#input-and-output-examples)
+  - [References](#references)
 
-## 语言功能描述及创新性
+## Introduction
 
-综述：**SCP**即simple C and python，我命名为**sicpy**，sicpy是基于C语言和python特点所综合的一门**无类型语言**，使用纯C语言开发。
-下面是一些语言特点：
-- 变量不需要设定类型，编译器会自动猜测变量类型。
-- 使用if、elif、else来取代switch
-- 局部区域访问全局变量必须加上global
-- 原生string类型通过引用计数方式自动垃圾回收，可以通过+连接
-- sicpy原生函数如print、fopen、fwrite、fread、fclose，给C函数调用预留了接口
-- 面向解释器开发人员的DBG模块（assert和panic）与面向程序员的精确到行数的报错模块（runtime和compile报错）
-- ……更多特性等待探索
+Summary: **SCP** stands for simple C and python, which I named as **sicpy**. Sicpy is an **untyped language** that integrates features of both C and Python, and is developed entirely in C. Here are some features of the language:
 
-## 开发细节
+- Variables do not require type declaration, the compiler will automatically guess the type.
+- Uses `if`, `elif`, and `else` in place of `switch`.
+- Accessing global variables in local scope requires the use of **global**.
+- Native string type with automatic garbage collection through **reference counting** and can be concatenated with **+**.
+- Native sicpy functions such as `print`, `fopen`, `fwrite`, `fread`, `fclose`, with an interface reserved for calling C functions.
+- A DBG module for interpreter developers (assert and panic) and an error-reporting module precise to the line number for programmers (runtime and compile errors).
+- ...more features awaiting exploration.
 
-### 代码量统计
+## Development Details
+
+### Code Count
 
 Date : 2020-12-26 10:03:11
 
@@ -47,85 +49,93 @@ Total : 19 files,  2474 codes, 380 comments, 375 blanks, all 3229 lines
 | Makefile | 1 | 45 | 1 | 2 | 48 |
 | JSON with Comments | 1 | 12 | 0 | 0 | 12 |
 
-### 词法分析
+### Lexical Analysis
 
-- 全局变量：用于存放flex处理的字符串流
+- Global variable: Used to store the string stream processed by flex.
+
 ```c
-#define STRING_ALLOC_SIZE       (256)   /* 每次buffer不够，新增的buffersize */
+#define STRING_ALLOC_SIZE       (256)   /* new buffersize when buffers run out*/
 static char *flex_string_buffer = NULL;
 static int flex_string_buffer_size = 0;
 static int flex_string_buffer_alloc_size = 0;
 ```
 
-- 关键函数：flex中调用，实现与全局变量间的交互
+- Key functions: Called in flex, facilitating interaction with global variables.
+
 ```c
-/* 给字符串添加一个新字符 */
+/* Add a new character to the string */
 void scp_add_character(int letter)
-/* 清空字串缓存 */
+/* Clear the string buffer */
 void scp_reset_string_buffer(void)
-/* 关闭字符串，在字符串末尾加上\0 */
+/* Terminate the string, appending \0 at the end */
 char * scp_close_string(void)
 ```
 
-- flex状态：包括INITIAL，COMMENT，STRING三类
-  - INITIAL为通常状态，正常处理标识符、括号数值等，遇到#开启注释状态，遇到"开启字符串状态
-  - COMMENT为注释状态，此时所有字符均丢弃，遇到\n则回到INITIAL状态
-  - STRING为字符串状态，上文所述全局变量和关键函数均在此处使用，再次遇到"回到INITIAL状态
+- Flex states: Includes **INITIAL**, **COMMENT**, and **STRING**.
+  - **INITIAL** is the default state, processing identifiers, parentheses, numbers, etc. Encounter `#` to initiate **COMMENT** mode, and `"` to initiate **STRING** mode.
+  - **COMMENT** is for comments, where all characters are discarded. On encountering `\n`, it returns to **INITIAL**.
+  - **STRING** is for processing strings, the aforementioned global variables and key functions are used here. Encounter `"` again to return to **INITIAL**.
 
-- 样例说明
+- Example
+
 ```c
 <INITIAL># {
-    /* #意味着开始注释模式 */
+    /* `#` means comment mode starts */
     BEGIN COMMENT;
 }
 <COMMENT>\n {
-    /* 在注释中遇到换行符，说明注释结束，并开始初始状态 */
+    /* Encountering a newline in a comment indicates the end of the comment and returns to the INITIAL state */
     increment_line_number();
     BEGIN INITIAL;
 }
 <INITIAL>\" {
-    /* 匹配字符串的开始，缓冲区设为0 */
+    /* Matching the start of a string, set buffer to 0 */
     flex_string_buffer_size = 0;
     BEGIN STRING;
 }
 <STRING>\" {
-    /* 字符串状态遇到"说明字符串结束，该字符串整体加入表达式 */
+    /* In string state, encountering " indicates the end of the string, and the entire string is added to the expression */
     Expression *expression = scp_alloc_expression(STRING_EXPRESSION);
-    // scp_close_string()作用为copy当前字符串，且在末尾加上\0
+    // scp_close_string() copys current string and adds `\0` in the end
     expression->u.string_value = scp_close_string();
     yylval.expression = expression;
-    BEGIN INITIAL;     // 返回通常状态
+    BEGIN INITIAL;     // back to INITIAL State
     return STRING_TOKEN;
 }
 ```
 
-### 语法分析
+### Syntax Analysis
 
-- 核心数据结构
+- Core Data Structures:
+
 ```c
 %union {
-    char                *identifier;        /* 标识符 */
-    ParameterList       *parameter_list;    /* 形参链表 */
-    ArgumentList        *argument_list;     /* 实参链表 */
-    Expression          *expression;        /* 表达式 */
-    Statement           *statement;         /* 语句 */
-    StatementList       *statement_list;    /* 语句链表 */
-    Block               *block;             /* 块，包含语句链表 */
-    Elif                *elif;              /* elif表达式 */
-    IdentifierList      *identifier_list;   /* 标识符链表 */
+    char                *identifier;       /* Identifier */
+    ParameterList       *parameter_list;   /* Parameter list */
+    ArgumentList        *argument_list;    /* Argument list */
+    Expression          *expression;       /* Expression */
+    Statement           *statement;        /* Statement */
+    StatementList       *statement_list;   /* List of statements */
+    Block               *block;            /* Block, contains list of statements */
+    Elif                *elif;             /* elif expression */
+    IdentifierList      *identifier_list;  /* List of identifiers */
 }
 ```
 
-- 对于表达式计算采用**递推式文法设计**
-注：优先级越低，在文法设计中层级越高，越后面进行计算
+- **Recursive Grammar Design** is used for expression evaluation.
+
+Note: The lower the priority, the higher the level in grammar design, and the later it gets calculated.
+
 ```c
 expression -> logical_or_expression -> logical_and_expression -> equality_expression
 -> relational_expression -> additive_expression -> multiplicative_expression 
 -> unary_expression -> primary_expression
 ```
 
-- `statment_list`——语句链表
-    - 语句（statement）解析为表达式+分号，形如：`expression SEMICOLON`，由以下7种语句类型构成
+- `statment_list` — List of statements:
+  
+  - A statement is parsed as an expression followed by a semicolon, in the form: `expression SEMICOLON`. It consists of 7 types of statements.
+
     ```c
         | global_statement
         | if_statement
@@ -135,58 +145,64 @@ expression -> logical_or_expression -> logical_and_expression -> equality_expres
         | break_statement
         | continue_statement
     ```
-    - 语句链表将语句串联，形成整体结构便于调用
 
-- `block`——代码块的应用
-    - 代码块有两种，一种包含语句链表形如{语句链表}：`LC statement_list RC`，一种为空代码块形如{}：`LC RC`
-    - 代码块声明完成后，可以在函数定义/循环等多处灵活使用
+  - The list of statements chains statements together, forming an overall structure that facilitates invocation.
 
-- `argument_list`与`parameter_list`——实参和形参链表
-    - 实参或形参链表由参数构成
-    - 如果是单一的标识符或表达式传入，形如`identifier`（形参），`expression`（实参），则创建对应链表
-    - 如果已有链表，则进行连接
+- `block` — Application of code blocks:
 
-- `function`——函数定义及参数传递，根据有无参数传递，有两种文法模式：
-    - 通过`function identifier() {}`这样的形式进行识别与处理
-    - 通过`function identifier(parameter_list) {}`这样的形式进行识别与处理
+  - There are two types of blocks: one that contains a list of statements, such as {list of statements}: `LC statement_list RC`, and one that's an empty block, like {}: `LC RC`.
+  - Once a block is declared, it can be flexibly used in function definitions, loops, etc.
 
-- `if_statement`——if语句，if语句有四种解析模式：
-    1. 单if，形如 `IF LP expression RP block`
-    2. if+else，形如`IF LP expression RP block ELSE block`
-    3. if+elif链表，形如`IF LP expression RP block elif_list`
-    4. if+elif链表+else，形如`IF LP expression RP block elif_list ELSE block`
+- `argument_list` and `parameter_list` — Lists of arguments and parameters:
 
-- `elif`——elif表达式实现
-    - elif基本与if语句相同，都是将表达式存入对应数据结构
-    - 但elif不同之处在于，elif是无限延伸的（一个if可以有无数个elif），因此我们需要使用elif_list串联语句
-    - 串联思路与statement链表、参数链表相同此处不过多赘述。
+  - The list of arguments or parameters is composed of parameters.
+  - If a single identifier or expression is passed, like `identifier` (parameter) or `expression` (argument), a corresponding list is created.
+  - If a list already exists, they are linked.
 
-### 语义分析
+- `function` — Function definition and parameter passing. There are two grammar patterns depending on whether parameters are passed:
+  - `function identifier() {}`.
+  - `function identifier(parameter_list) {}`.
 
-- 语义分析的基本思想是**将表达式分配内存空间，存储入对应的数据结构**，在合适的时间点再进行运算或处理。
-- 为什么不直接进行计算呢？因为我们是解释型语言，需要根据上下文**推测类型**，且直接计算会导致**假短路**
-    - 什么是假短路呢？例如，我们直接在分析`additive_expression`时进行加法计算，这样因为逻辑计算次序问题，最后传到`logical_and_expression LOGICAL_AND equality_expression`时，我们的左右表达式**已经计算完毕**，这时候再进行逻辑短路操作，实际是没有意义的。
+- `if_statement` — If statements. There are four parsing modes for if statements:
+    1. A single if, in the form `IF LP expression RP block`.
+    2. If + else, in the form `IF LP expression RP block ELSE block`.
+    3. If + list of elif, in the form `IF LP expression RP block elif_list`.
+    4. If + list of elif + else, in the form `IF LP expression RP block elif_list ELSE block`.
 
-- 例子：对block的语义处理，我们分配内存，存储对应的语句链表。
+- `elif` — Implementation of elif expressions:
+
+  - Elif is essentially the same as if statements, where the expression is stored in the corresponding data structure.
+  - However, the difference with elif is that it can extend indefinitely (an if can have countless elifs), so we need to use `elif_list` to chain statements.
+  - The chaining logic is the same as the list of statements and the list of parameters.
+
+### Semantic Analysis
+
+- The basic idea of semantic analysis is **to allocate memory space for expressions and store them in the corresponding data structures**. Calculations or processes are then conducted at the appropriate time.
+- Why not calculate directly? Because we are an interpreted language. We need to **infer the type** based on the context, and direct calculation can cause **false short-circuiting**.
+  - What is false short-circuiting? For example, if we directly perform an addition calculation when analyzing `additive_expression`, due to the order of logical computation, by the time we pass it to `logical_and_expression LOGICAL_AND equality_expression`, our left and right expressions **have already been calculated**. Carrying out a logical short-circuit operation at this point is actually meaningless.
+
+- Example: For semantic processing of the block, we allocate memory and store the corresponding list of statements.
+
 ```c
-/* 代码块 */
+/* code block */
 block: LC statement_list RC{
-            /* 形如{a=2; b=3;} */
+            /* eg: {a=2; b=3;} */
             Block *block = scp_malloc(sizeof(Block));
             block->statement_list = $2;
             $$ = block;
         }
         | LC RC {
-            /* 空代码块 */
+            /* empty code block */
             Block *block = scp_malloc(sizeof(Block));
             block->statement_list = NULL;
             $$ = block;
         };
 ```
 
-- 例子2：对if的语义处理，我们根据对应语法解析并创建相应表达式
+- Example 2: For semantic processing of the if statement, we parse the corresponding grammar and create the relevant expression.
+
 ```c
-/* 创建if语句 */
+/* create if statement */
 Statement * scp_create_if_statement(Expression *condition,
                         Block *then_block, Elif *elif_list, Block *else_block)
 {
@@ -199,66 +215,71 @@ Statement * scp_create_if_statement(Expression *condition,
     return st;
 }
 
-/* if语句 */
+/* if statement */
 if_statement: IF LP expression RP block {
-            /* 形如if(3<5){} */
+            /* eg: if(3<5){} */
             $$ = scp_create_if_statement($3, $5, NULL, NULL);
         }
         | IF LP expression RP block ELSE block {
-            /* 形如if(2>4){} else{} */
+            /* eg: if(2>4){} else{} */
             $$ = scp_create_if_statement($3, $5, NULL, $7);
         }
         | IF LP expression RP block elif_list {
-            /* 形如if(2>4){} elif{} elif{} */
+            /* eg: if(2>4){} elif{} elif{} */
             $$ = scp_create_if_statement($3, $5, $6, NULL);
         }
         | IF LP expression RP block elif_list ELSE block {
-            /* 形如if(2>4){} elif{} elif{} else{} */
+            /* eg: if(2>4){} elif{} elif{} else{} */
             $$ = scp_create_if_statement($3, $5, $6, $8);
         };
 ```
 
-### 核心数据类型
+### Core Data Types
 
-- 我们在语义分析中的主要动作为存储信息，推后计算，那么就要有相应数据结构存储对应信息。
-- `SCP_Interpreter`——顶层设计，所有功能的基础
+- The main actions in our semantic analysis are to store information and defer calculations. Therefore, we need corresponding data structures to store the relevant information.
+- `SCP_Interpreter` — Top-level design, the foundation of all functions
+
 ```c
-/* SCP解释器 */
+/* SCP Interpreter */
 struct SCP_Interpreter_tag {
-    MEM_Storage         interpreter_storage;    /* 解释器内存 */
-    MEM_Storage         execute_storage;        /* 执行内存 */
-    Variable            *variable;              /* 变量 */
-    FunctionDefinition  *function_list;         /* 函数定义链表 */
-    StatementList       *statement_list;        /* 语句链表 */
-    int                 current_line_number;    /* 行号 */
+    MEM_Storage         interpreter_storage;    /* Interpreter memory */
+    MEM_Storage         execute_storage;        /* Execution memory */
+    Variable            *variable;              /* Variable */
+    FunctionDefinition  *function_list;         /* List of function definitions */
+    StatementList       *statement_list;        /* Statement list */
+    int                 current_line_number;    /* Line number */
 };
 ```
-- `expression`——表达式，基础运算单元
+
+- **Expression**, the basic computational unit
+
 ```c
-/* 表达式结构体 */
+/* Expression */
 struct Expression_tag {
     ExpressionType type;
     int line_number;
     union {
-        SCP_Boolean             boolean_value;              /* 布尔值 */
-        int                     int_value;                  /* int值 */
-        double                  double_value;               /* double值 */
-        char                    *string_value;              /* string值 */
-        char                    *identifier;                /* 标识符 */
-        AssignExpression        assign_expression;          /* 赋值表达式 */
-        BinaryExpression        binary_expression;          /* 二值表达式 */
-        Expression              *minus_expression;          /* 负值表达式 */
-        FunctionCallExpression  function_call_expression;   /* 函数调用表达式 */
+        SCP_Boolean             boolean_value;              /* Boolean value */
+        int                     int_value;                  /* int value */
+        double                  double_value;               /* double value */
+        char                    *string_value;              /* string value */
+        char                    *identifier;                /* Identifier */
+        AssignExpression        assign_expression;          /* Assignment expression */
+        BinaryExpression        binary_expression;          /* Binary expression */
+        Expression              *minus_expression;          /* Negative value expression */
+        FunctionCallExpression  function_call_expression;   /* Function call expression */
     } u;
 };
 ```
 
-### 计算模块
+### Computation Module
 
-- 存储信息之后便是对应运算，因为是**无类型语言**，所以我们的运算**不仅要计算结果值，也要运算结果类型**（运算值类型在赋值时便进行猜测获取）
-- 例子：计算一个二元表达式
+- After storing the information, the corresponding operations are performed. Since it is a **typeless language**, our operations **need to compute not only the result value but also the result type** (the type of the operation value is guessed during assignment).
+
+- Example: Computing a binary expression
+
 ```c
-/* 计算表达式，传入解释器和当前环境、操作符和左右表达式进行运算 */
+/* Calculate the expression, passing in the interpreter, current environment, operator, and left and right expressions for computation */
 SCP_Value scp_eval_binary_expression(SCP_Interpreter *inter, LocalEnvironment *env,
                            ExpressionType operator, Expression *left, Expression *right)
 {
@@ -266,70 +287,77 @@ SCP_Value scp_eval_binary_expression(SCP_Interpreter *inter, LocalEnvironment *e
     SCP_Value   right_val = eval_expression(inter, env, right);
     SCP_Value   result;
 
-    /* 左右都为int类型的计算 */
+    /* Computation where both left and right are of type int */
     if (left_val.type == SCP_INT_VALUE && right_val.type == SCP_INT_VALUE) {
         eval_binary_int(inter, operator, left_val.u.int_value,
                         right_val.u.int_value, &result, left->line_number);
     }
-    /* 左右都为double类型的计算 */
+    /* Computation where both left and right are of type double */
     else if (left_val.type == SCP_DOUBLE_VALUE && right_val.type == SCP_DOUBLE_VALUE) {
         eval_binary_double(operator, left_val.u.double_value,
                             right_val.u.double_value, &result, left->line_number);
 
     }
-    /* 左边int右边double类型的计算 */
+    /* Computation where the left is int and the right is double */
     else if (left_val.type == SCP_INT_VALUE && right_val.type == SCP_DOUBLE_VALUE) {
-        left_val.u.double_value = left_val.u.int_value;     /* 类型转换 */
+        left_val.u.double_value = left_val.u.int_value;     /* datatype cast */
         eval_binary_double(operator, left_val.u.double_value, right_val.u.double_value,
                            &result, left->line_number);
     }
-    /* 略去…… */
-    /* 左边字符串且操作符为加的处理 */
+    /* skip…… */
+    /* Handling the left side as a string and the operator is addition */
     else if (left_val.type == SCP_STRING_VALUE && operator == ADD_EXPRESSION) {
-        /* 略去…… */
+        /* skip…… */
     }
-    /* 如果有任一边为NULL */
+    /* If either side is NULL */
     else if (left_val.type == SCP_NULL_VALUE || right_val.type == SCP_NULL_VALUE) {
         result.type = SCP_BOOLEAN_VALUE;
         result.u.boolean_value = eval_binary_null(operator, &left_val, &right_val, left->line_number);
     } 
-    /* 略去…… */
+    /* skip…… */
     return result;
 }
 ```
-- 可以看到，我们必须对每种可能的情况进行分析，以计算最后的表达式类型
-- 这也是为什么**无类型语言速度一般会比强类型语言慢**
 
-### debug模块
+- As can be seen, we have to analyze each possible scenario to compute the final expression type.
+- This is also why **typeless languages are generally slower than strongly typed languages**.
 
-- 给面向解释器开发人员的assert和panic函数封装
-    - 宏定义了默认变长参数函数DBG_assert和DBG_panic，可以直接在源代码中进行调用
-    - 调用示例
+### Debug Module
+
+- An encapsulation of `assert` and `panic` functions for interpreter developers.
+
+  - Macro-defined default variadic functions `DBG_assert` and `DBG_panic` can be directly called in the source code.
+  - Usage example:
+
     ```c
-        /* 要求表达式cond.type == SCP_BOOLEAN_VALUE成立，否则报错并返回位置和信息 */
+        /* Asserts that the expression cond.type == SCP_BOOLEAN_VALUE is true, otherwise it raises an error and returns the position and information. */
         DBG_assert(cond.type == SCP_BOOLEAN_VALUE, ("cond.type..%d", cond.type));
 
-        /* 返回结果 */
+        /* return results */
         Assertion failure (cond.type == SCP_BOOLEAN_VALUE)   file:execute.c   line:103  cond.type..0
     ```
-- 给语言使用编程人员做了报错模块，包括编译报错和运行时报错，可以猜测错误发生位置（如果猜测失败则返回-1），并附有错误信息。
-    - 例子：
-    ```c
-    /* 写代码时不小心多打了几个字符 */
-    print("10.0 % 8.0 = " + (10.0 % 8.0) + "\n");aas  /
-    /* 编译报错返回结果，12为行号 */
-    12:在(print)附近发生语法错误
 
-    /* 调用未声明的函数 */
+- An **error-report** module is available for language programmers, including compilation errors and runtime errors. It can guess the error location (returns -1 if the guess fails) and provides an error message.
+
+  - Example：
+
+    ```c
+    /* Mistakenly typing extra characters in the code */
+    print("10.0 % 8.0 = " + (10.0 % 8.0) + "\n");aas  /
+    /* Compilation error output with 12 as the line number */
+    12: Syntax error near (print).
+
+    /* Calling an undeclared function */
     gtestfunc();
-    /* 运行报错返回，299为行号 */
-    299:找不到函数(gtestfunc)。
+    /* Runtime error with 299 as the line number */
+    299: Function (gtestfunc) not found.
     ```
 
-### memory模块
+### Memory Module
 
-- 对开辟、释放内存空间的封装，便于解释器开发人员直接使用
-- 目前有这5种函数宏定义声明
+- Encapsulation for memory allocation and deallocation, for interpreter developers.
+- Currently, there are these 5 function macro definitions.
+
 ```c
 #define MEM_malloc(size) (MEM_malloc_func(__FILE__, __LINE__, size))
 
@@ -342,13 +370,14 @@ SCP_Value scp_eval_binary_expression(SCP_Interpreter *inter, LocalEnvironment *e
 #define MEM_storage_malloc(storage, size) (MEM_storage_malloc_func(__FILE__, __LINE__, storage, size))
 ```
 
-### sicpy原生函数与C语言函数预留接口
+### Sicpy Native Functions and C Language Function Interface
 
-- sicpy原生函数如print、fopen、fwrite、fread、fclose
-- 给扩展C语言原生函数预留了接口
-- 接口示例：书写对应函数后，到add_native_functions处注册即可
+- Sicpy native functions such as `print`, `fopen`, `fwrite`, `fread`, and `fclose`.
+- An interface is reserved for extending native C language functions.
+- Interface example: After writing the corresponding function, register it at the `add_native_functions` location.
+
 ```c
-/* 新建scp原生函数集群 */
+/* add scp native functions groups */
 static void add_native_functions(SCP_Interpreter *inter)
 {
     SCP_add_native_function(inter, "print", scp_nv_print_proc);
@@ -359,63 +388,71 @@ static void add_native_functions(SCP_Interpreter *inter)
 }
 ```
 
-## 使用手册
+## User Manual
 
-### 编译及运行
+### Compilation and Execution
 
-1. 编译：win10在SCP文件夹下运行`make`进行编译，生成sicpy.exe（需要flex、bison、gcc环境）
-2. 运行：在test文件夹下已有一个测试文件，运行`.\sicpy test/test.scp`执行程序，即可看到输出。
+1. Compilation: On Windows 10, run `make` in the SCP folder to compile and generate `sicpy.exe` (requires **flex, bison, and gcc** environment).
+2. Execution: A test file is already present in the `test` folder. Run `.\sicpy test/test.scp` to execute the program and see the output.
 
-### 语言描述
+### Language Description
 
-1. 源文件编码：
-   一般情况下，可以在win10环境下使用UTF-8进行编码。如果需要输出中文字符等，则需要使用GBK编码格式（和控制台输出格式相同）
-2. 关键字
+1. Source File Encoding:
+   Generally, you can use **UTF-8** encoding on Windows 10. If you need to output Chinese characters, use **GBK** encoding format (same as the console output format).
+2. Keywords:
+
    ```c
    if else elif for function global return break null true false continue while
    ```
-3. 注释：使用#进行注释
-4. 标识符
-   第一个字母是英文字母（大小写均可）或下划线
-   第二个字符开始可以是英文字母，下划线或数字
-5. 常量
-   真假值常量，整数常量，实数常量，字符串常量，null常量
-6. 运算符：
+
+3. Comments: Use `#` for comments.
+4. Identifiers:
+   The first letter should be an English alphabet (uppercase or lowercase) or an underscore.
+   From the second character onwards, it can be an English alphabet, underscore, or a number.
+5. Constants:
+   Boolean values, integer constants, real number constants, string constants, null constants.
+6. Operators:
+
    ```c
    && || = == != > >= < <= + - * / % !
    ```
-7. 分隔符：
+
+7. Delimiters:
    `() {} ; ,`
-8. 隐式类型转换
-   使用双目运算符和比较运算符时，如果左右两边类型不同，基于以下规则进行类型转换：
-   - 只要一边为实数，另一边为整数则会转换为实数运算
-   - 左边是字符串，右边是逻辑类型/整数类型/实数类型则右边会转化为字符串
-9. global语句
-    为了在函数内引用全局变量，必须加上global语句，减少不经意间对全局变量的修改
-10. 函数定义
-    使用`function`关键字对函数进行声明
+8. Implicit Type Conversion:
+   When using binary operators and comparison operators, if the types on both sides are different, type conversion is based on the following rules:
+   - If one side is a real number and the other is an integer, it will be converted to real number operations.
+   - If the left is a string and the right is a boolean type/int type/real type, the right will be converted to a string.
+9. Global Statement:
+   To reference a global variable inside a function, you must use the `global` statement to avoid unintended modifications to global variables.
+10. Function Definitions:
+   Use the `function` keyword to declare a function.
 
-### 输入输出样例
+### Input and Output Examples
 
-- 样例1：for循环，if、else
-输入：
+- Example 1: for loop, if, else
+
+Input:
+
 ```c
-for (i = 0; i < 5; i = i + 1) {     # for循环
+for (i = 0; i < 5; i = i + 1) {
     if (i == 0) {
-	print("i = 0\n");
+        print("i = 0\n");
     } 
     elif (i == 1) {
-	print("i = 1\n");
+        print("i = 1\n");
     }
     elif (i == 2) {
-	print("i = 2\n");
+        print("i = 2\n");
     }
     else {
-	print("i = else\n");
+        print("i = else\n");
     }
 }
 ```
-输出：
+
+Output：
+
 ```c
 i = 0
 i = 1
@@ -424,8 +461,10 @@ i = else
 i = else
 ```
 
-- 局部变量与全局变量
-输入：
+- local and global variable
+
+Input:
+
 ```c
 value = 10;
 function func() {
@@ -434,21 +473,23 @@ function func() {
 }
 function func2() {
     value = 30;
-    print("value.." + value + "\n");    # 应该输出30
+    print("value.." + value + "\n");    # output 30
 }
 func();
 func2();
-print("value.." + value + "\n");        # 应该输出20，因为全局变量被func改变
+print("value.." + value + "\n");        # output 20, because the global variable was modified by the function.
 ```
-输出：
+
+output：
+
 ```c
 value..30
 value..20
 ```
 
-## 参考资料
+## References
 
-- 《编译原理》（龙书）——（美） Alfred V. Aho
-- 《现代编译原理-C语言描述》（虎书）——（美）Andrew W.Appel
-- 《高级编译器设计与实现》（鲸书）——（美）Steven S.Muchnick
-- 《自制编程语言》——（日）前桥和弥
+- "Compilers: Principles, Techniques, and Tools" (Dragon Book) — Alfred V. Aho, et al.
+- "Modern Compiler Implementation in C" (Tiger Book) — Andrew W. Appel
+- "Advanced Compiler Design and Implementation" (Whale Book) — Steven S. Muchnick
+- "Creating Your Own Programming Language" — Kazuya Maehashi (Japanese)
